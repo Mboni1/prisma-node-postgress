@@ -64,7 +64,7 @@ exports.getProducts = async (req, res) => {
     }
 }
 exports.getProductsById = async (req, res) => {
-try{
+try {
     const product = await prisma.product.findUnique({
         where: {
             id: parseInt(req.params.id)
@@ -102,8 +102,84 @@ exports.updateProduct = async (req, res) => {
         if (req.body.categoryId !== undefined && !await prisma.category.findUnique({ where: { id: req.body.categoryId }})) {
             return res.status(422).json({ error: 'Category id not found'})
         }
+
+        const checkProduct = await prisma.product.findUnique({
+            where: { id: parseInt(req.params.id)}
+        })
+
+        if(!checkProduct){
+            return res.status(404).json({
+                error: 'product not found !'
+            })
+        }
+
+        const updateProduct = await prisma.product.update({
+            data: req.body,
+            where: {
+                id: parseInt(req.params.id)
+            },
+        })
+        return res.status(200).json({
+            message: `user with ${req.params.id} updated successfully`
+        })
     } catch (error) {
          return res.status(500).json({ error: error.message})
 
     }
 } 
+exports.deleteProduct = async (req, res) => {
+    const findProduct = await prisma.product.findUnique({
+        where: {
+            id: parseInt(req.params.id)
+        }
+    })
+    if(!findProduct){
+        return res.status(404).json({
+            message: `no product with ${req.params.id} found !`
+        })
+    }
+    try{
+        const deleteProduct = await prisma.product.delete({
+            where : {
+                id: parseInt(req.params.id)
+            }
+        })
+        return res.status(200).json({
+            message: 'product deleted successfully'
+        })
+    } catch (error) {
+        return res.status(500).json({ error: error.message})
+    }
+}
+exports.getProductsByCategoryId = async (req, res) => {
+    try {
+    if (!await prisma.category.findUnique({ where: { id: parseInt(req.params.categoryId)}})){
+        return res.status(404).json({ error: 'Category id not found'})
+    }
+    const products = await prisma.product.findMany ({
+        where: {
+            categoryId: parseInt(req.params.categoryId )
+        },
+        include: {
+            category: {
+                select: {
+                    id: true,
+                    name: true
+                }
+            }
+        },
+        omit: {
+            categoryId: true
+        },
+        orderBy: {
+            name: 'asc'
+        }
+    })
+    return res.status(200).json({
+        message: "product was found"
+    })
+        
+    } catch (error) {
+        return res.status(500).json({ error: error.message})
+    }
+}

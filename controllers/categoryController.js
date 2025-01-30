@@ -36,7 +36,7 @@ exports.getCategories = async (req, res) => {
 }
 
 exports.updateCategory = async (req, res) => {
-    try{
+     try {
         if (!await prisma.category.findUnique({where: {id :parseInt(req.params.id)} })) {
             return res.status(404).json({error: 'Category not found'})
         }
@@ -64,6 +64,14 @@ exports.deleteCategory = async (req, res) => {
     try{
         if (!await prisma.category.findUnique({ where: { id: parseInt(req.params.id) } })) {
             return res.status(404).json({ error: 'Category not found' })
+       }
+       const productCount = await prisma.product.count({
+        where: {
+            categoryId: parseInt(req.params.id)
+        }
+       })
+       if (productCount) {
+        return res.status(409).json({ error: `Category id being used in ${productCount} product(s)`})
        }
        await prisma.category.delete({
         where: {
